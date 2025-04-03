@@ -12,35 +12,57 @@
             box-sizing: border-box;
         }
 
-        /* Body Style */
+        /* Moving Gradient Background */
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f7fc;
-            color: #333;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(-45deg, #6a11cb, #2575fc, #4facfe, #00f2fe);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #f1f1f1;
             line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         /* Container */
         .container {
-            width: 80%;
+            width: 100%;
             max-width: 900px;
-            margin: 40px auto;
-            background-color: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
         }
 
         h1 {
             text-align: center;
             color: #4CAF50;
             margin-bottom: 20px;
+            font-size: 2rem;
         }
 
         h2 {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             margin-bottom: 15px;
-            color: #333;
+            color: #f1f1f1;
+            text-transform: uppercase;
+            font-weight: bold;
         }
 
         /* Form Styling */
@@ -48,56 +70,92 @@
             display: flex;
             justify-content: center;
             margin-bottom: 30px;
+            transition: all 0.3s ease;
         }
 
         input[type="file"] {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #3e3e3e;
+            color: #fff;
             width: 60%;
             max-width: 400px;
+            margin-right: 15px;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            background-color: #4CAF50;
         }
 
         button {
-            padding: 10px 20px;
+            padding: 12px 25px;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-left: 10px;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
         }
 
         button:hover {
             background-color: #45a049;
+            transform: scale(1.05);
         }
 
         /* File List Styling */
         ul {
             list-style-type: none;
             padding: 0;
+            margin-top: 20px;
         }
 
         ul li {
-            background-color: #f1f1f1;
-            border-radius: 8px;
+            background-color: #282828;
+            border-radius: 12px;
             margin: 10px 0;
-            padding: 10px;
+            padding: 15px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        ul li:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
         }
 
         ul li a {
             color: #4CAF50;
             text-decoration: none;
             font-weight: bold;
+            font-size: 1rem;
         }
 
         ul li a:hover {
             text-decoration: underline;
+            color: #ff6f61;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: none; /* Hidden initially */
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 8px;
+            background-color: #4CAF50;
+            border-radius: 5px;
         }
 
         /* Responsive Design */
@@ -116,11 +174,16 @@
     <div class="container">
         <h1>Welcome to Your Personal File Server</h1>
 
-        <h2>Upload a file</h2>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" required>
+        <h2>Upload a File</h2>
+        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" id="fileInput" required>
             <button type="submit">Upload</button>
         </form>
+
+        <!-- Progress Bar -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
 
         <h2>Uploaded Files</h2>
         <ul>
@@ -132,5 +195,51 @@
             {% endfor %}
         </ul>
     </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Show the progress bar
+            progressContainer.style.display = 'block';
+
+            // Create a FormData object and append the file
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // AJAX request to upload the file with progress
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percent + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // File uploaded successfully, reset form and progress bar
+                    form.reset();
+                    progressBar.style.width = '0';
+                    progressContainer.style.display = 'none';
+                    alert('File uploaded successfully!');
+                } else {
+                    alert('Upload failed. Please try again.');
+                }
+            };
+
+            xhr.send(formData);
+        });
+    </script>
 </body>
 </html>
